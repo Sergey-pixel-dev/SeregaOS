@@ -8,32 +8,46 @@
 
 typedef struct
 {
-    uint8_t allocated : 1;   // This page is allocated to something
-    uint8_t kernel_page : 1; // This page is a part of the kernel
+    uint8_t allocated : 1;
+    uint8_t kernel_page : 1;
     uint32_t reserved : 30;
 } page_flags_t;
 
-class PageAllocator
+typedef struct
 {
-    // Current memory structure: |.text .data .bss .... (PageAllocator etc. are saved in .bss section) | |node 0, node 1, ....
-    // .. (nodes save pointers to next\prev nodes and pointer to page metadata structure, so we need allocate all possible nodes even if they point to already allocated page) |
-    // |page metada 0, page metadata 1, ..... | |page 4Kb, page 4Kb, ... |
+    uint8_t allocated : 1;
+    uint32_t reserved : 31;
+} heap_segment_flags_t;
 
-    // We use linked list for saving free pages.
-    // But we can implement priority for allocate pages (for example, the nearest).
-    // Idea for anlysis for kursovoy project.
+class MemAllocator
+{
     class Page
     {
     public:
-        uint64_t vaddr_mapped;
         page_flags_t flags;
     };
+
     Page *all_pages_array;
+    uintptr_t metadata_end;
     List<Page *> free_pages;
+
+    class Segment
+    {
+    public:
+        Segment *prev;
+        Segment *next;
+        heap_segment_flags_t flags;
+        uint32_t size;
+    };
+    Segment *segments_begin;
 
 public:
     void mem_init();
     void *alloc_page();
     void free_page(void *page_mem);
+
+    void *alloc_segment(size_t size);
+    void free_segment(void *segment_mem);
 };
+
 #endif

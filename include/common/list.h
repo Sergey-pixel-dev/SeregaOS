@@ -14,6 +14,7 @@ public:
         T value;
     };
 
+public:
     Node *head = nullptr;
     Node *tail = nullptr;
     size_t sz = 0;

@@ -18,10 +18,10 @@ OBJ_DIR   = $(BUILD_DIR)/obj
 INCLUDES = -I$(INC_DIR)/common -I$(INC_DIR)/kernel
 
 # Flags
-ASFLAGS  = -mcpu=$(CPU) -ffreestanding
-CFLAGS   = -mcpu=$(CPU) -ffreestanding -std=gnu99 -O2 -Wall -Wextra $(INCLUDES)
+ASFLAGS  = -mcpu=$(CPU) -ffreestanding -g
+CFLAGS   = -mcpu=$(CPU) -ffreestanding -std=gnu99 -O2 -Wall -Wextra $(INCLUDES) -g
 CXXFLAGS = -mcpu=$(CPU) -ffreestanding -std=c++17 -O2 -Wall -Wextra \
-           -fno-exceptions -fno-rtti -fno-threadsafe-statics $(INCLUDES)
+           -fno-exceptions -fno-rtti -fno-threadsafe-statics $(INCLUDES) -g
 LDFLAGS  = -T $(BUILD_DIR)/linker.ld -ffreestanding -O2 -nostdlib -lgcc
 
 # QEMU

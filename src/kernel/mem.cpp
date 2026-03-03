@@ -3,6 +3,11 @@
 extern "C" char __end[];
 extern "C" char __heap_start[];
 
+static Page *all_pages_array;
+static uintptr_t metadata_end;
+static List<Page *> free_pages;
+static Segment *segments_begin;
+
 void bzero(void *ptr, size_t n)
 {
     char *ptrc = (char *)ptr;
@@ -10,7 +15,7 @@ void bzero(void *ptr, size_t n)
         ptrc[i] = 0;
 }
 
-void MemAllocator::mem_init()
+void mem::init()
 {
     uintptr_t end_addr = (uintptr_t)__end;
 
@@ -19,12 +24,10 @@ void MemAllocator::mem_init()
     uint32_t nodes_size = total_pages * sizeof(List<Page *>::Node);
     uint32_t pages_meta_size = total_pages * sizeof(Page);
 
-    // Layout after __end: [nodes array][page metadata array]
     List<Page *>::Node *nodes = (List<Page *>::Node *)end_addr;
     all_pages_array = (Page *)(end_addr + nodes_size);
     metadata_end = end_addr + nodes_size + pages_meta_size;
 
-    // Everything up to metadata_end is reserved (kernel + heap + nodes + page array)
     uint32_t reserved_pages = (metadata_end + PAGE_SIZE - 1) / PAGE_SIZE;
 
     uint32_t i = 0;
@@ -49,7 +52,9 @@ void MemAllocator::mem_init()
     segments_begin = heap_first_node;
 }
 
-void *MemAllocator::alloc_page()
+// --- Page allocator ---
+
+void *mem::alloc_page()
 {
     if (free_pages.size() == 0)
         return nullptr;
@@ -63,7 +68,7 @@ void *MemAllocator::alloc_page()
     return page_mem;
 }
 
-void MemAllocator::free_page(void *page_mem)
+void mem::free_page(void *page_mem)
 {
     uintptr_t end_addr = (uintptr_t)__end;
     uint32_t n_page = (uintptr_t)page_mem / PAGE_SIZE;
@@ -74,9 +79,10 @@ void MemAllocator::free_page(void *page_mem)
     free_pages.add(all_pages_array + n_page, &nodes[n_page]);
 }
 
-void *MemAllocator::alloc_segment(size_t size)
+// --- Heap allocator ---
+
+void *mem::alloc_segment(size_t size)
 {
-    // Allign to 8 bytes for AAcrh64
     size = (size + 7) & ~(size_t)7;
 
     Segment *cur = segments_begin;
@@ -108,12 +114,11 @@ void *MemAllocator::alloc_segment(size_t size)
     return nullptr;
 }
 
-void MemAllocator::free_segment(void *segment_mem)
+void mem::free_segment(void *segment_mem)
 {
     Segment *seg = (Segment *)((uintptr_t)segment_mem - sizeof(Segment));
     seg->flags.allocated = 0;
 
-    // Coalesce with next neighbor
     if (seg->next != nullptr && !seg->next->flags.allocated)
     {
         seg->size += sizeof(Segment) + seg->next->size;
@@ -122,7 +127,6 @@ void MemAllocator::free_segment(void *segment_mem)
             seg->next->prev = seg;
     }
 
-    // Coalesce with previous neighbor
     if (seg->prev != nullptr && !seg->prev->flags.allocated)
     {
         seg->prev->size += sizeof(Segment) + seg->size;
@@ -130,4 +134,36 @@ void MemAllocator::free_segment(void *segment_mem)
         if (seg->next != nullptr)
             seg->next->prev = seg->prev;
     }
+}
+
+// --- Global operators ---
+
+void *operator new(size_t size)
+{
+    return mem::alloc_segment(size);
+}
+
+void *operator new[](size_t size)
+{
+    return mem::alloc_segment(size);
+}
+
+void operator delete(void *ptr) noexcept
+{
+    mem::free_segment(ptr);
+}
+
+void operator delete(void *ptr, size_t) noexcept
+{
+    mem::free_segment(ptr);
+}
+
+void operator delete[](void *ptr) noexcept
+{
+    mem::free_segment(ptr);
+}
+
+void operator delete[](void *ptr, size_t) noexcept
+{
+    mem::free_segment(ptr);
 }

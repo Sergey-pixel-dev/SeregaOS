@@ -19,35 +19,36 @@ typedef struct
     uint32_t reserved : 31;
 } heap_segment_flags_t;
 
-class MemAllocator
+struct Page
 {
-    class Page
-    {
-    public:
-        page_flags_t flags;
-    };
+    page_flags_t flags;
+};
 
-    Page *all_pages_array;
-    uintptr_t metadata_end;
-    List<Page *> free_pages;
+struct Segment
+{
+    Segment *prev;
+    Segment *next;
+    heap_segment_flags_t flags;
+    uint32_t size;
+};
 
-    class Segment
-    {
-    public:
-        Segment *prev;
-        Segment *next;
-        heap_segment_flags_t flags;
-        uint32_t size;
-    };
-    Segment *segments_begin;
-
-public:
-    void mem_init();
+namespace mem
+{
+    void init();
     void *alloc_page();
     void free_page(void *page_mem);
 
     void *alloc_segment(size_t size);
     void free_segment(void *segment_mem);
-};
+}
+
+void bzero(void *ptr, size_t n);
+
+void *operator new(size_t size);
+void *operator new[](size_t size);
+void operator delete(void *ptr) noexcept;
+void operator delete(void *ptr, size_t) noexcept;
+void operator delete[](void *ptr) noexcept;
+void operator delete[](void *ptr, size_t) noexcept;
 
 #endif

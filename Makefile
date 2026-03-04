@@ -19,10 +19,10 @@ INCLUDES = -I$(INC_DIR)/common -I$(INC_DIR)/kernel
 
 # Flags
 ASFLAGS  = -mcpu=$(CPU) -ffreestanding -g
-CFLAGS   = -mcpu=$(CPU) -ffreestanding -std=gnu99 -O2 -Wall -Wextra $(INCLUDES) -g
-CXXFLAGS = -mcpu=$(CPU) -ffreestanding -std=c++17 -O2 -Wall -Wextra \
+CFLAGS   = -mcpu=$(CPU) -ffreestanding -std=gnu99 -O0 -Wall -Wextra $(INCLUDES) -g
+CXXFLAGS = -mcpu=$(CPU) -ffreestanding -std=c++17 -O0 -Wall -Wextra \
            -fno-exceptions -fno-rtti -fno-threadsafe-statics $(INCLUDES) -g
-LDFLAGS  = -T $(BUILD_DIR)/linker.ld -ffreestanding -O2 -nostdlib -lgcc
+LDFLAGS  = -T $(BUILD_DIR)/linker.ld -ffreestanding -O0 -nostdlib -lgcc
 
 # QEMU
 QEMU       = qemu-system-aarch64
